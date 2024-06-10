@@ -32,20 +32,27 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+namespace Glpi\Config\LegacyConfigurators;
 
-return static function (ContainerConfigurator $container): void {
-    $projectDir = dirname(__DIR__);
+use Glpi\Config\LegacyConfigProviderInterface;
+use Glpi\Http\Firewall;
+use Symfony\Component\HttpFoundation\Request;
 
-    $services = $container->services();
+final readonly class FirewallConfig implements LegacyConfigProviderInterface
+{
+    public function execute(Request $request): void
+    {
+        /**
+         * @var array $CFG_GLPI
+         * @var string|null $SECURITY_STRATEGY
+         */
+        global $CFG_GLPI,
+               $SECURITY_STRATEGY
+               ;
 
-    $services
-        ->defaults()
-        ->autowire()
-        ->autoconfigure()
-    ;
-
-    $services->load('Glpi\Config\\', $projectDir . '/src/Glpi/Config');
-    $services->load('Glpi\Controller\\', $projectDir . '/src/Glpi/Controller');
-    $services->load('Glpi\Http\\', $projectDir . '/src/Glpi/Http');
-};
+        if (\PHP_SAPI !== 'cli') {
+            $firewall = new Firewall($CFG_GLPI['root_doc']);
+            $firewall->applyStrategy($request->server->get('PHP_SELF'), $SECURITY_STRATEGY ?? null);
+        }
+    }
+}

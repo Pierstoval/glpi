@@ -32,20 +32,13 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Symfony\Component\DependencyInjection\Loader\Configurator;
+namespace Glpi\Config;
 
-return static function (ContainerConfigurator $container): void {
-    $projectDir = dirname(__DIR__);
+use Symfony\Component\HttpFoundation\Request;
 
-    $services = $container->services();
+interface LegacyConfigProviderInterface
+{
+    public const TAG_NAME = 'glpi.legacy_config_provider';
 
-    $services
-        ->defaults()
-        ->autowire()
-        ->autoconfigure()
-    ;
-
-    $services->load('Glpi\Config\\', $projectDir . '/src/Glpi/Config');
-    $services->load('Glpi\Controller\\', $projectDir . '/src/Glpi/Controller');
-    $services->load('Glpi\Http\\', $projectDir . '/src/Glpi/Http');
-};
+    public function execute(Request $request): void;
+}
