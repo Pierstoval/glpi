@@ -61,42 +61,6 @@ final readonly class BaseConfig implements LegacyConfigProviderInterface
 
         include_once(GLPI_ROOT . "/inc/autoload.function.php");
 
-        // Check if web root is configured correctly
-        if (!isCommandLine()) {
-            $included_files = array_filter(
-                get_included_files(),
-                function (string $included_file) {
-                    // prevent `tests/router.php` to be considered as initial script
-                    return realpath($included_file) !== realpath(sprintf('%s/tests/router.php', GLPI_ROOT));
-                }
-            );
-
-            $initial_script = array_shift($included_files) ?? __FILE__;
-
-            // If `auto_prepend_file` configuration is used, ignore first included files
-            // as long as they are not located inside GLPI directory tree.
-            $prepended_file = ini_get('auto_prepend_file');
-            if ($prepended_file !== '' && $prepended_file !== 'none') {
-                $prepended_file = stream_resolve_include_path($prepended_file);
-                while (
-                    $initial_script !== null
-                    && !str_starts_with(
-                        realpath($initial_script) ?: '',
-                        realpath(GLPI_ROOT)
-                    )
-                ) {
-                    $initial_script = array_shift($included_files);
-                }
-            }
-
-            if (realpath($initial_script) !== realpath(sprintf('%s/public/index.php', GLPI_ROOT))) {
-                echo sprintf(
-                    'Web server root directory configuration is incorrect, it should be "%s". See installation documentation for more details.' . PHP_EOL,
-                    realpath(sprintf('%s/public', GLPI_ROOT))
-                );
-                exit(1);
-            }
-        }
 
         (static function () {
             // Define GLPI_* constants that can be customized by admin.
