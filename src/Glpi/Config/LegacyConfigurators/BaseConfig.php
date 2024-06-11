@@ -47,9 +47,7 @@ final readonly class BaseConfig implements LegacyConfigProviderInterface
 
     public function execute(Request $request): void
     {
-        if (!defined('GLPI_ROOT')) {
-            define('GLPI_ROOT', $this->projectDir);
-        }
+        define('GLPI_ROOT', $this->projectDir);
 
         // Notice problem  for date function :
         $tz = ini_get('date.timezone');
