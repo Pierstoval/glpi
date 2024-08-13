@@ -32,33 +32,30 @@
  * ---------------------------------------------------------------------
  */
 
-namespace Glpi\Http;
+namespace Glpi\PhpUnit\functional\Glpi\Http;
 
-use Glpi\Config\LegacyConfigProviderListener;
+use Glpi\PhpUnit\functional\Glpi\TestTools\SubProcessFunctionalTesterTrait;
+use Glpi\PhpUnit\functional\Glpi\TestTools\SubProcessRequest;
+use PHPUnit\Framework\TestCase;
 
-final class ListenersPriority
+class PluginRouteTest extends TestCase
 {
-    public const LEGACY_LISTENERS_PRIORITIES = [
-        // Static assets must be served without executing anything else.
-        // Keep them on top priority.
-        LegacyAssetsListener::class         => 500,
+    use SubProcessFunctionalTesterTrait;
 
-        LegacyRouterListener::class         => 400,
-
-        // Config providers may still expect some `$_SERVER` variables to be redefined.
-        // They must therefore be executed after the `LegacyRouterListener`.
-        LegacyConfigProviderListener::class => 350,
-
-        // This listener allows disabling plugins routes at runtime,
-        //   that's why it's executed right after Symfony's Router,
-        //   and also after GLPI's config is set.
-        // @see \Symfony\Component\HttpKernel\EventListener\RouterListener::getSubscribedEvents()
-        PluginsRoutesListener::class => 31,
-
-        FirewallListener::class => 0,
-    ];
-
-    private function __construct()
+    public function testPluginRoute(): void
     {
+        self::assertTrue(\Plugin::isPluginActive('tester'), 'Failed asserting that plugin is inactive');
+
+        $res = $this->request(new SubProcessRequest(
+            method: 'GET',
+//            url: '/front/login.php',
+            url: '/plugins/tester/plugin-test',
+            login_info: ['user' => 'glpi', 'password' => 'glpi'],
+        ));
+        dd($res);
+
+        self::assertSame(200, $res->status_code, 'Failed to assert that route returns expected HTTP code');
+        self::assertSame('', $res->error);
+        self::assertSame('', $res->output);
     }
 }

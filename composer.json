@@ -112,6 +112,7 @@
         "squizlabs/php_codesniffer": "^3.10",
         "symfony/browser-kit": "^6.4",
         "symfony/http-client": "^6.4",
+        "symfony/process": "^7.1",
         "symfony/stopwatch": "^6.4",
         "symfony/twig-bundle": "^6.4",
         "symfony/var-dumper": "^6.4",
@@ -166,7 +167,8 @@
     "autoload-dev": {
         "psr-4": {
             "Glpi\\Tools\\": "tools/src/",
-            "Glpi\\Tests\\": "tests/src/"
+            "Glpi\\Tests\\": "tests/src/",
+            "Glpi\\PhpUnit\\": "phpunit/"
         },
         "files": ["tests/src/autoload/functions.php"]
     },

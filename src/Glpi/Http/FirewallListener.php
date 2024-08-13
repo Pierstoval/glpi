@@ -48,7 +48,9 @@ final readonly class FirewallListener implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        return [KernelEvents::REQUEST => ['onKernelRequest', 0]];
+        return [
+            KernelEvents::REQUEST => ['onKernelRequest', ListenersPriority::LEGACY_LISTENERS_PRIORITIES[self::class]],
+        ];
     }
 
     public function onKernelRequest(RequestEvent $event): void

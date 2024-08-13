@@ -45,4 +45,5 @@ phpstan.neon
 /.phpunit.result.cache
 /phpunit/files/
 /phpunit/config
+/public/status_code
 *.phar
