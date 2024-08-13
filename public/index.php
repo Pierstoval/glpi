@@ -55,6 +55,8 @@ $request = Request::createFromGlobals();
 
 $response = $kernel->handle($request);
 
-$response->send();
+register_shutdown_function(static function () use ($kernel, $request, $response) {
+    $kernel->terminate($request, $response);
+});
 
-$kernel->terminate($request, $response);
+$response->send();
