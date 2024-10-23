@@ -31,7 +31,7 @@
  #}
 
 {{ call([object_class, 'displayFullPageForItem'], [
-    app.request.query.string('id'),
+    id,
     call([object_class, 'getSectorizedDetails']),
     {
         'withtemplate': app.request.query.string('withtemplate'),
