@@ -34,8 +34,7 @@
 
 namespace Glpi\Controller;
 
-use CommonDBTM;
-use Glpi\Exception\Http\NotFoundHttpException;
+use CommonGLPI;
 use Html;
 use Glpi\Event;
 use Glpi\Exception\Http\AccessDeniedHttpException;
@@ -63,7 +62,7 @@ final class GenericFormController extends AbstractController
 
         $this->checkIsValidClass($class);
 
-        /** @var class-string<CommonDBTM> $class */
+        /** @var class-string<CommonGLPI> $class */
 
         if (!$class::canView()) {
             throw new AccessDeniedHttpException();
@@ -74,6 +73,7 @@ final class GenericFormController extends AbstractController
         }
 
         return $this->render('pages/generic_form.html.twig', [
+            'id' => $request->query->get('id', -1),
             'object_class' => $class,
         ]);
     }
@@ -88,13 +88,13 @@ final class GenericFormController extends AbstractController
             throw new BadRequestHttpException(\sprintf("Class \"%s\" does not exist.", $class));
         }
 
-        if (!\is_subclass_of($class, CommonDBTM::class)) {
+        if (!\is_subclass_of($class, CommonGLPI::class)) {
             throw new BadRequestHttpException(\sprintf("Class \"%s\" is not a DB object.", $class));
         }
     }
 
     /**
-     * @param class-string<CommonDBTM> $class
+     * @param class-string<CommonGLPI> $class
      */
     private function handlePostRequest(Request $request, string $class): ?Response
     {
@@ -111,7 +111,7 @@ final class GenericFormController extends AbstractController
     }
 
     /**
-     * @param class-string<CommonDBTM> $class
+     * @param class-string<CommonGLPI> $class
      */
     private function callAction(Request $request, string $class, string $action, int $permission, string $post_action): Response
     {
@@ -135,9 +135,9 @@ final class GenericFormController extends AbstractController
         if ($result) {
             Event::log(
                 $result,
-                'TODO',
-                4,
-                'TODO',
+                \strtolower(\basename($class)),
+                $class::getFormLogLevel(),
+                $class::getFormServiceName(),
                 sprintf(__('%1$s executes the "%2$s" action on the item %3$s'), $_SESSION["glpiname"], $action, $post_data["name"])
             );
 
