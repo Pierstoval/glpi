@@ -82,12 +82,12 @@ class Software extends CommonDBTM
         return 's';
     }
 
-    public static function getFormServiceName(): string
+    public static function getLogServiceName(): string
     {
         return 'inventory';
     }
 
-    public static function getFormLogLevel(): int
+    public static function getLogLevel(): int
     {
         return 4;
     }

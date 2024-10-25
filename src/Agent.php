@@ -38,6 +38,7 @@ use Glpi\DBAL\QueryExpression;
 use Glpi\Application\ErrorHandler;
 use Glpi\Application\View\TemplateRenderer;
 use Glpi\DBAL\QueryFunction;
+use Glpi\Form\FormAction;
 use Glpi\Inventory\Conf;
 use Glpi\Inventory\Inventory;
 use Glpi\Plugin\Hooks;
@@ -81,6 +82,29 @@ class Agent extends CommonDBTM
     public static function getSectorizedDetails(): array
     {
         return ['admin', Inventory::class, self::class];
+    }
+
+    public static function getLogServiceName(): string
+    {
+        return 'inventory';
+    }
+
+    public static function getLogLevel(): int
+    {
+        return 4;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getAllowedFormActions(): array
+    {
+        return [
+            FormAction::UPDATE,
+            FormAction::DELETE,
+            FormAction::RESTORE,
+            FormAction::PURGE,
+        ];
     }
 
     public function rawSearchOptions()

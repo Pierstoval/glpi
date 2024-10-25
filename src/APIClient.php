@@ -34,6 +34,7 @@
  */
 
 use Glpi\Application\View\TemplateRenderer;
+use Glpi\Form\FormAction;
 
 /**
  * @since 9.1
@@ -68,6 +69,33 @@ class APIClient extends CommonDBTM
     public static function getTypeName($nb = 0)
     {
         return _n("API client", "API clients", $nb);
+    }
+
+    public static function getSectorizedDetails(): array
+    {
+        return ["config", "config", __CLASS__];
+    }
+
+    public static function getLogServiceName(): string
+    {
+        return 'setup';
+    }
+
+    public static function getLogLevel(): int
+    {
+        return 4;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public static function getAllowedFormActions(): array
+    {
+        return [
+            FormAction::ADD,
+            FormAction::UPDATE,
+            FormAction::PURGE,
+        ];
     }
 
     public function defineTabs($options = [])

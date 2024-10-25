@@ -36,6 +36,7 @@
 use Glpi\Application\View\TemplateRenderer;
 use Glpi\Features\AssetImage;
 use Glpi\Features\AssignableItem;
+use Glpi\Form\FormAction;
 
 /**
  * Appliances Class
@@ -70,6 +71,16 @@ class Appliance extends CommonDBTM
     public static function getSectorizedDetails(): array
     {
         return ['management', self::class];
+    }
+
+    public static function getLogServiceName(): string
+    {
+        return 'inventory';
+    }
+
+    public static function getLogLevel(): int
+    {
+        return 4;
     }
 
     public static function getTypeName($nb = 0)
