@@ -35,6 +35,8 @@
 namespace Glpi\Controller;
 
 use CommonGLPI;
+use Glpi\Exception\Http\NotFoundHttpException;
+use Glpi\Form\FormAction;
 use Html;
 use Glpi\Event;
 use Glpi\Exception\Http\AccessDeniedHttpException;
@@ -48,11 +50,11 @@ use Symfony\Component\Routing\Attribute\Route;
 final class GenericFormController extends AbstractController
 {
     public const ACTIONS_AND_CHECKS = [
-        'add' => ['permission' => CREATE, 'post_action' => 'back'],
-        'delete' => ['permission' => DELETE, 'post_action' => 'list'],
-        'restore' => ['permission' => DELETE, 'post_action' => 'list'],
-        'purge' => ['permission' => PURGE, 'post_action' => 'list'],
-        'update' => ['permission' => UPDATE, 'post_action' => 'back'],
+        FormAction::ADD->name => ['permission' => CREATE, 'post_action' => 'back'],
+        FormAction::DELETE->name => ['permission' => DELETE, 'post_action' => 'list'],
+        FormAction::RESTORE->name => ['permission' => DELETE, 'post_action' => 'list'],
+        FormAction::PURGE->name => ['permission' => PURGE, 'post_action' => 'list'],
+        FormAction::UPDATE->name => ['permission' => UPDATE, 'post_action' => 'back'],
     ];
 
     #[Route("/{class}/Form", name: "glpi_generic_form")]
@@ -68,14 +70,17 @@ final class GenericFormController extends AbstractController
             throw new AccessDeniedHttpException();
         }
 
-        if ($response = $this->handlePostRequest($request, $class)) {
+        $form_action = $this->getCurrentAllowedAction($request, $class);
+
+        if (!$form_action) {
+            throw new AccessDeniedHttpException();
+        }
+
+        if ($response = $this->handleFormAction($request, $form_action, $class)) {
             return $response;
         }
 
-        return $this->render('pages/generic_form.html.twig', [
-            'id' => $request->query->get('id', -1),
-            'object_class' => $class,
-        ]);
+        throw new NotFoundHttpException();
     }
 
     private function checkIsValidClass(string $class): void
@@ -96,39 +101,34 @@ final class GenericFormController extends AbstractController
     /**
      * @param class-string<CommonGLPI> $class
      */
-    private function handlePostRequest(Request $request, string $class): ?Response
-    {
-        foreach (self::ACTIONS_AND_CHECKS as $action => ['permission' => $permission, 'post_action' => $post_action]) {
-            if (
-                $request->request->has($action)
-                && method_exists($class, $action)
-            ) {
-                return $this->callAction($request, $class, $action, (int) $permission, $post_action);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param class-string<CommonGLPI> $class
-     */
-    private function callAction(Request $request, string $class, string $action, int $permission, string $post_action): Response
+    private function handleFormAction(Request $request, FormAction $form_action, string $class): ?Response
     {
         $id = $request->query->get('id', -1);
         $object = new $class();
         $post_data = $request->request->all();
+        $permission = self::ACTIONS_AND_CHECKS[$form_action->name]['permission'];
+        $post_action = self::ACTIONS_AND_CHECKS[$form_action->name]['post_action'];
 
-        // Permissions
-        $object->check($id, $permission, $post_data);
+        if ($object instanceof \CommonDBTM) {
+            // Permissions
+            $object->check($id, $permission, $post_data);
+        }
 
-        // Action execution
-        $result = match ($action) {
-            'add' => $object->add($post_data),
-            'delete' => $object->delete($post_data),
-            'restore' => $object->restore($post_data),
-            'purge' => $object->delete($post_data, 1),
-            'update' => $object->update($post_data),
+        // Special case for GET
+        if ($form_action->value === 'get' && $request->getMethod() === 'GET') {
+            return $this->render('pages/generic_form.html.twig', [
+                'id' => $request->query->get('id', -1),
+                'object_class' => $class,
+            ]);
+        }
+
+        // POST action execution
+        $result = match ($form_action) {
+            FormAction::ADD => $object->add($post_data),
+            FormAction::DELETE => $object->delete($post_data),
+            FormAction::RESTORE => $object->restore($post_data),
+            FormAction::PURGE => $object->delete($post_data, 1),
+            FormAction::UPDATE => $object->update($post_data),
             default => throw new \RuntimeException(\sprintf("Unsupported object action \"%s\".", $post_action)),
         };
 
@@ -136,13 +136,13 @@ final class GenericFormController extends AbstractController
             Event::log(
                 $result,
                 \strtolower(\basename($class)),
-                $class::getFormLogLevel(),
-                $class::getFormServiceName(),
-                sprintf(__('%1$s executes the "%2$s" action on the item %3$s'), $_SESSION["glpiname"], $action, $post_data["name"])
+                $class::getLogLevel(),
+                $class::getLogServiceName(),
+                sprintf(__('%1$s executes the "%2$s" action on the item %3$s'), $_SESSION["glpiname"], $form_action, $post_data["name"])
             );
 
             // Specific case for "add"
-            if ($action === 'add' && $_SESSION['glpibackcreated']) {
+            if ($form_action === FormAction::ADD && $_SESSION['glpibackcreated']) {
                 return new RedirectResponse($object->getLinkURL());
             }
         }
@@ -152,5 +152,41 @@ final class GenericFormController extends AbstractController
             'list' => new StreamedResponse(fn() => $object->redirectToList(), 302),
             default => throw new \RuntimeException(\sprintf("Unsupported post-action \"%s\".", $post_action)),
         };
+    }
+
+    /**
+     * @param class-string<CommonGLPI> $class
+     */
+    private function callAction(Request $request, string $class, string $action, int $permission, string $post_action): Response
+    {
+    }
+
+    /**
+     * @param class-string<CommonGLPI> $class
+     */
+    private function getCurrentAllowedAction(Request $request, string $class): ?FormAction
+    {
+        if ($request->getMethod() === 'POST') {
+            foreach ($class::getAllowedFormActions() as $action) {
+                if (!isset(self::ACTIONS_AND_CHECKS[$action])) {
+                    throw new \RuntimeException(\sprintf('Undefined action name "%s".', $action));
+                }
+
+                if (
+                    $request->request->has($action)
+                    && \method_exists($class, $action)
+                    && $class::isFormActionAllowed($action)
+                ) {
+                    return FormAction::from($action);
+                }
+            }
+        }
+
+        // Specific get-case
+        if ($class::isFormActionAllowed(FormAction::GET)) {
+            return FormAction::GET;
+        }
+
+        return null;
     }
 }

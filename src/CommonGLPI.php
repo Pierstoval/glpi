@@ -36,6 +36,7 @@
 use Glpi\Application\View\TemplateRenderer;
 use Glpi\Exception\Http\AccessDeniedHttpException;
 use Glpi\Exception\Http\NotFoundHttpException;
+use Glpi\Form\FormAction;
 use Glpi\Plugin\Hooks;
 use Glpi\Search\FilterableInterface;
 
@@ -139,16 +140,33 @@ class CommonGLPI implements CommonGLPIInterface
     }
 
     /**
+     * @return array<string>
+     */
+    public static function getAllowedFormActions(): array
+    {
+        return FormAction::ALL;
+    }
+
+    public static function isFormActionAllowed(string|FormAction $action): bool
+    {
+        if ($action instanceof FormAction) {
+            $action = $action->value;
+        }
+
+        return \in_array($action->value, static::getAllowedFormActions(), true);
+    }
+
+    /**
      * Used by generic forms for details and logging purposes
      *
      * @return string
      */
-    public static function getFormServiceName(): string
+    public static function getLogServiceName(): string
     {
         return '';
     }
 
-    public static function getFormLogLevel(): int
+    public static function getLogLevel(): int
     {
         return 1;
     }
