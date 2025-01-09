@@ -350,12 +350,10 @@ abstract class AbstractRequest
             $xml_errors = libxml_get_errors();
            /* @var \LibXMLError $xml_error */
             foreach ($xml_errors as $xml_error) {
-                ErrorHandler::getInstance()->handleError(
-                    E_USER_WARNING,
-                    $xml_error->message,
-                    $xml_error->file,
-                    $xml_error->line
-                );
+                \trigger_error(\sprintf(
+                    'XML error: `%s` in file `%s::%d`',
+                    $xml_error->message, $xml_error->file, $xml_error->line
+                ), E_USER_WARNING);
             }
             $this->addError('XML not well formed!', 400);
             return false;
