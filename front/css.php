@@ -33,7 +33,7 @@
  * ---------------------------------------------------------------------
  */
 
-use Glpi\Application\ErrorHandler;
+use Glpi\Application\ErrorUtils;
 use Glpi\UI\ThemeManager;
 
 // Main CSS compilation requires about 140MB of memory on PHP 7.4 (110MB on PHP 8.2).
@@ -44,7 +44,7 @@ if (Toolbox::getMemoryLimit() < ($max_memory * 1024 * 1024)) {
 }
 
 // Ensure warnings will not break CSS output.
-ErrorHandler::getInstance()->disableOutput();
+\Glpi\Error\ErrorHandler::disableOutput();
 
 // If a custom theme is requested, we need to get the real path of the theme
 if (isset($_GET['file']) && isset($_GET['is_custom_theme']) && $_GET['is_custom_theme']) {
