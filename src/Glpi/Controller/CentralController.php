@@ -69,6 +69,8 @@ class CentralController extends AbstractController
             return new RedirectResponse($url);
         }
 
+        throw new \RuntimeException('Noop');
+
         return $this->render('pages/central/index.html.twig', [
             'central' => new Central(),
         ]);
